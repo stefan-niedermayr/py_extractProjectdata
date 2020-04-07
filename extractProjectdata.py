@@ -39,7 +39,7 @@ import sys, os, datetime, shutil
 # ------------------------------------------------------------------------------
 srcPath = "C:\\Xilinx\\vivprj\\ARTY_A7_Sys01"
 dstPath = "C:\\Users\\Stefan\\Temp\\"
-fileTypes = (".xpr", ".bd", ".tcl", ".vhd", ".v", ".sv", ".xdc")
+fileTypes = (".xpr", ".bd", ".tcl", ".vhd", ".v", ".sv", ".xdc", ".xci")
 
 # String that a folder inside srcPath must contain, that will also be searched
 # for files and further subdirectories. Rest will be ignored.
