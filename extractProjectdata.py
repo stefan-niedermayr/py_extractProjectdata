@@ -33,12 +33,14 @@
 #
 #
 # ------------------------------------------------------------------------------
-import sys, os, datetime, shutil
+import sys, os, datetime, shutil, argparse
 # ------------------------------------------------------------------------------
 # GLOBAL VARIABLE DEFINITIONS
 # ------------------------------------------------------------------------------
-srcPath = "C:\\Xilinx\\vivprj\\ARTY_A7_Sys01"
-dstPath = "C:\\Users\\Stefan\\Temp\\"
+#srcPath = "C:\\Xilinx\\vivprj\\ARTY_A7_Sys01"
+srcPath = "/home/stefan-e495/XilPrj/NF_MB_Basic"
+#dstPath = "C:\\Users\\Stefan\\Temp\\"
+dstPath = "/home/stefan-e495/Temp/"
 fileTypes = (".xpr", ".bd", ".tcl", ".vhd", ".v", ".sv", ".xdc", ".xci")
 
 # String that a folder inside srcPath must contain, that will also be searched
@@ -46,10 +48,12 @@ fileTypes = (".xpr", ".bd", ".tcl", ".vhd", ".v", ".sv", ".xdc", ".xci")
 srcPathSubdirContains = ".srcs"
 
 # Backup directory name
-creationTime = datetime.date.today().strftime("%y%y%m%d")
-backupDirName = creationTime + "_XilProj_Backup"
+CreationTime = datetime.date.today().strftime("%y%y%m%d")
+BackupDirName = CreationTime + "_XilProj_Backup"
 backupPath = ""
 
+# Settings
+VerboseMode = False # Print Logging Messages in Console
 
 # ------------------------------------------------------------------------------
 # FUNCTION DECLARATIONS
@@ -68,23 +72,20 @@ def printHeader():
     printLine()
 # END printHeader
 
-## printHelpMsg()
-#  Function to print help message when the script is called with a help argument
-#  or without any arguments.
-def printHelpMsg():
-    print("This script may be used to extract data from project directories " +
-          "of your\nchoice. You can define a source path, from where the " + 
-          "script should look\nfor files from the predefined file extension " +
-          "list. The structure of the\ndirectory is kept identical. The " +
-          "directories including the found files\nare then backed up in " +
-          "the destination location of your choice.\n\n")
-    # Description of the possible parameters
-    print("-help\t\tLists all possible commands for this script.\n")
-    print("-start\t\tStarts the data extraction process.\n")
-    printLine()
-# END printHelpMsg
+## conv2tuple(arg)
+#  Function to allow parsing filetypes as string and converting them to a tuple.
+#
+#  param arg    String in the following format: ".v, .txt, .vhd"
+#               Filetypes may be choosen as required.
+#  return       Tuple made from input string.
+def conv2tuple(arg):
+    if(isinstance(arg, str)):
+        return tuple(map(str, arg.split(', ')))
+    else:
+        raise Exception("conv2tuple: Parsed argument is not a string!")
+# END conv2tuple
 
-## createMainBackupDir(dstFilePath, backupDirName)
+## createMainBackupDir(dstFilePath, BackupDirName)
 #  Function to create the main directory where the project file structure will
 #  be copied to.
 #
@@ -92,26 +93,26 @@ def printHelpMsg():
 #  param dstFilePath    Absolute file path to the destination directory, where
 #                       the project file structure is copied to.
 #  return               Absoulte file path of the created subdirectory.     
-def createMainBackupDir(dstFilePath=None, backupDirName=None):
+def createMainBackupDir(dstFilePath=None, BackupDirName=None):
     # Start check of function parameters
     if dstFilePath == None:
         raise Exception("createMainBackupDir: Function called without " +
                         "dstFilePath parameter.")
 
-    if backupDirName == None:
+    if BackupDirName == None:
         raise Exception("createMainBackupDir: Function called without " + 
-                        "backupDirName parameter.")
+                        "BackupDirName parameter.")
     # End check of function parameters                           
 
     try:
         # Change to destination path.
         os.chdir(dstFilePath)
         # Check if directory does NOT already exist.
-        if not os.path.isdir(backupDirName):
+        if not os.path.isdir(BackupDirName):
             # Create backup directory.
-            os.mkdir(backupDirName)
+            os.mkdir(BackupDirName)
             # Store and return the absolute path to the created directory.
-            backupPath = os.path.join(dstPath, backupDirName)
+            backupPath = os.path.join(dstPath, BackupDirName)
             return backupPath
         else:
             # Abort if project directory already exists, in order to prevent
@@ -162,7 +163,7 @@ def createBackupSubDir(srcFilePath=None, dstFilePath=None):
     except OSError:
         print("createBackupSubDir: Could not create subdir in backup folder.")
         print("Exit script.")
-        return
+        return 1
 # END createBackupSubDir
 
 ## searchForFiles(srcFilePath, fileExtensions)
@@ -177,7 +178,7 @@ def createBackupSubDir(srcFilePath=None, dstFilePath=None):
 #  param fileExtensions     Tuple of file extensions to look for.
 #  return                   If files found with wanted extensions, list with
 #                           filenames+extension returned.
-#                           if no files or no files with wanted extensions,
+#                           If no files or no files with wanted extensions,
 #                           return 1.
 def searchForFiles(srcFilePath=None, fileExtensions=None):
     # Start check of function parameters
@@ -284,14 +285,12 @@ def extractFiles(srcFilePath=None, dstFilePath=None, fileList=None):
         for fname in fileList:
             # Create source path including filename.
             srcPath = os.path.join(srcFilePath, fname)
-            # TODO: Add a verbose switch.
-            print("Copy file: " + fname + " from source path: " + srcPath +
-                  " to destination path " + dstFilePath)
+            # Print Logging-Message in Verbose-Mode.
+            if(VerboseMode):
+                print("Copy file: " + fname + " from source path: " + srcPath +
+                    " to destination path " + dstFilePath)
             # Copy file from source to destination.
             shutil.copy(srcPath, dstFilePath)
-    else:
-        # No files were found. Nothing to extract.
-        return 1
 # END extractFiles
 
 ## extractProjectdata(srcFilePath, dstFilePath, fileExtensions)
@@ -362,7 +361,9 @@ def cleanBackupDir(dstFilePath=None):
                         "dstFilePath parameter.")
     # End check of function parameters 
 
-    print("\nStart cleanBackupDir at path: " + dstFilePath)
+    # Print Logging-Message in Verbose-Mode.
+    if(VerboseMode):
+        print("\nClean backup directory: " + dstFilePath)
 
     # Change directory to destination file path.
     os.chdir(dstFilePath)
@@ -378,69 +379,128 @@ def cleanBackupDir(dstFilePath=None):
         # Retrieve directory name, which does not contain files or further 
         # directories.
         dirName = os.path.split(dstFilePath)[-1]
-        print("Name of directory to remove: " + dirName)
+
+        # Print Logging-Message in Verbose-Mode.
+        if(VerboseMode):
+            print("Name of directory to remove: " + dirName)
+
         # Remove the directory that does not contain files or further 
         # directories.
         os.rmdir(dstFilePath)
-        print("Directory removed!")
+
+        # Print Logging-Message in Verbose-Mode.
+        if(VerboseMode):
+            print("Directory removed!")
+    
     # If destination file path contains subdirectories...
     elif dirList != 1:
         # Go through each subdirectory...
         for directory in dirList:
-            # Create a temperorary absolute file path.
+            # Create a temporary absolute file path.
             temp_dstFilePath = os.path.join(dstFilePath, directory)
-            #print("Search for dir to remove in: " + temp_dstFilePath)
             # Run cleanBackupDir on this subdirectory.
             cleanBackupDir(temp_dstFilePath)
 # END cleanBackupDir
 
 # ------------------------------------------------------------------------------
+# PARSER
+# ------------------------------------------------------------------------------
+parser = argparse.ArgumentParser(description=r'''extractProjectdata.py''',
+                                 formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument("-src", "--src",
+                    help="Parent path where data should be extracted from.",
+                    type=str)
+parser.add_argument("-dst", "--dst",
+                    help='''Path where folder to store extracted data should be created.''', 
+                    type=str)
+parser.add_argument("-ft", "--filetypes", 
+                    help='''String of file types that should be extracted from the src-path. Format: \".v, .bd, .tcl\"''', 
+                    type=conv2tuple)
+parser.add_argument("-v", "--verbose",
+                    help='''Verbose-Mode. Prints logging-messages in the console.''',
+                    action='store_true')  
+
+args = parser.parse_args()
+
+# Check if source-path is parsed.
+if(args.src != None):
+    if(os.path.isdir(args.src)):
+        srcPath = args.src
+        print("Source-Path: {0}".format(srcPath))
+    else:
+        print("Default source-path is used: {0}".format(srcPath))
+else:
+    print("Default source-path is used: {0}".format(srcPath))
+
+# Check if destination-path is parsed.
+if(args.dst != None):
+    if(os.path.isdir(args.dst)):
+        dstPath = args.dst
+        print("Destination-Path: {0}".format(dstPath))
+    else:
+        print("Default destination-path is used: {0}".format(dstPath))
+else:
+        print("Default destination-path is used: {0}".format(dstPath))
+
+# Check if filetypes are parsed.
+if(args.filetypes != None):
+    if isinstance(args.filetypes, tuple):
+        fileTypes = args.filetypes
+        print("Filetypes: {0}".format(fileTypes))
+    else:
+        print("Default filetypes are used: {0}".format(fileTypes))
+else:
+    print("Default filetypes are used: {0}".format(fileTypes))
+
+# Check if verbose argument is parsed.
+if(args.verbose != None):
+    VerboseMode = args.verbose
+
+# ------------------------------------------------------------------------------
 # MAIN ROUTINE
 # ------------------------------------------------------------------------------
 # The main routine is composed to extract data of Xilinx Vivado Projects.
-# From the project folder only the files in the main directory and files 
-# from the project.src needs to be extracted. File extensions reduce the data
-# copied down to the essentials.
+# From the project folder, only the files in the main directory and files 
+# from the project.src needs to be extracted. Only required filetypes get 
+# extracted to save space.
 # ------------------------------------------------------------------------------
-# Header
-printHeader()
+if __name__ == "__main__":
+    # Print Header
+    printHeader()
 
-# Get number of arguments
-argCnt = len(sys.argv)
+    # Create backup directory.
+    mainBackupPath = createMainBackupDir(dstPath, BackupDirName)
 
-if argCnt < 2:
-    # No arguments, print help message.
-    printHelpMsg()
-elif (argCnt < 3) and (sys.argv[1] == "-start" or sys.argv[1] == "start"):
-    # 1 argument, either "-start" or "start".
-
-    # --- Start Xilinx Vivado Specific Routine ---
-    # Try to create backup directory
-    mainBackupPath = createMainBackupDir(dstPath, backupDirName)
-    # Create Subdirectory for project
+    # Create Subdirectory for project.
     projectbackupPath = createBackupSubDir(srcPath, mainBackupPath)
-    # # Search for files in source directory
+
+    # Search for files in source directory.
     fileList = searchForFiles(srcPath, fileTypes)
+
     # Extract files with certain file extensions from source directory.
     extractFiles(srcPath, projectbackupPath, fileList)
+
     # Check if a directory exists in source directory.
     dirList = searchForDirectories(srcPath)
-    print(dirList) # debug
+    
+    # Print Logging-Message in Verbose-Mode.
+    if(VerboseMode):
+        print(dirList)
+    
     for directory in dirList:
         if srcPathSubdirContains in directory:
-            print(directory) # debug
             srcPath = os.path.join(srcPath, directory)
-            print(srcPath) # debug
-    # --- End Xilinx Vivado Specific Routine ---
 
-    # Extract data from the <projectname>.srcs folder
+    # Extract data from directory.
     extractProjectdata(srcPath, projectbackupPath, fileTypes)
-    printLine()
 
-    # Cleanup backup dir from directories, that are empty.
+    # Print Logging-Message in Verbose-Mode.
+    if(VerboseMode):
+        printLine()
+
+    # Cleanup backup-directory from directories, that are empty.
     cleanBackupDir(mainBackupPath)
-    printLine()
 
-elif (argCnt < 3) or (sys.argv[1] == "-help") or (sys.argv[1] == "help"):
-    # 1 argument, either "-help" or "help"
-    printHelpMsg()
+    # Print Logging-Message in Verbose-Mode.
+    if(VerboseMode):
+        printLine()
