@@ -7,23 +7,12 @@
 # Version       1.0.0
 # Python-Ver.   3.8.1
 # Description   This script may be used to extract data from project directories
-#               of your choice. You can define a source path, from where the 
-#               script should look for files from the predefined file extension
-#               list. The structure of the directory is kept identical. The 
-#               directories including the found files are then backed up in
-#               the destination location of your choice.
+#               of your choice. It is explicitly designed to extract certain 
+#               file types out of Xilinx Vivado projects and retaining the 
+#               underlying directory structure.
 #
-#               The main purpose of this script is to extract important data
-#               from Xilinx Vivado Projects to make it easier to version control
-#               those files.
-#
-#               In order to successfully backup a Vivado project, the following
-#               file need to be saved:
-#
-#               (1) Project .xpr file
-#               (2) Created .tcl script (from write_project_tcl)
-#               (3) Constraint files .xdc
-#               (4) Board files .bd
+#               Empty folders (= contain no folders or files) in the destination 
+#               directory are deleted.
 #
 # Arguments:
 #
