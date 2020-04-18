@@ -288,7 +288,7 @@ def extractFiles(srcFilePath=None, dstFilePath=None, fileList=None):
             print("Copy file: " + fname + " from source path: " + srcPath +
                   " to destination path " + dstFilePath)
             # Copy file from source to destination.
-            shutil.copy(srcPath, dstFilePath, follow_symlinks=True)
+            shutil.copy(srcPath, dstFilePath)
     else:
         # No files were found. Nothing to extract.
         return 1
